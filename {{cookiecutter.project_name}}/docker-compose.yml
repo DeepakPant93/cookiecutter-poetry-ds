@@ -1,0 +1,19 @@
+version: '3.9'
+
+services:
+  {{cookiecutter.project_name}}:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: {{cookiecutter.project_name}}
+    ports:
+      - "{{cookiecutter.app_host_port}}:{{cookiecutter.app_host_port}}"
+    volumes:
+      - .:/app
+    environment:
+      - PYTHONUNBUFFERED=1
+    command: >
+      uvicorn main:app
+      --host 0.0.0.0
+      --port {{cookiecutter.app_host_port}}
+      --reload

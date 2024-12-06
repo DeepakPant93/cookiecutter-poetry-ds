@@ -1,0 +1,20 @@
+data_ingestion:
+  IMAGE_SIZE: 224
+  BATCH_SIZE: 32
+
+data_validation:
+  IMAGE_SIZE: 224
+  BATCH_SIZE: 32
+
+data_transformation:
+  IMAGE_SIZE: 224
+  BATCH_SIZE: 32
+
+model_trainer:
+  BATCH_SIZE: 32
+  LEARNING_RATE: 0.001
+  EPOCHS: 10
+  CHECKPOINT_MODEL: true
+
+model_evaluation:
+  BATCH_SIZE: 32
