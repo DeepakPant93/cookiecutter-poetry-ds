@@ -10,26 +10,33 @@ packages = [
   {include = "{{cookiecutter.project_slug}}"}
 ]
 
+[tool.poetry.scripts]
+{{cookiecutter.project_slug}} = "{{cookiecutter.project_slug}}.main:main"
+
 [tool.poetry.dependencies]
 python = ">=3.11,<4.0"
 fastapi = "^0.100.0"  # Latest compatible version
 uvicorn = "^0.23.0"  # For running FastAPI apps
-python-dotenv = "^1.0.0"  # Manage environment variables
-PyPDF2 = "^3.0.0"  # For PDF manipulation
-pydantic = "^2.0.0"  # Data validation and settings management
-tensorflow = "^2.14.0"  # Tensorflow for machine learning
-numpy = "^1.26.0"  # Numerical computation
-pandas = "^2.1.0"  # Data manipulation and analysis
-scikit-learn = "^1.3.1"  # Machine learning library
-seaborn = "^0.13.0"  # Statistical data visualization
-matplotlib = "^3.8.0"  # Data visualization
-scipy = "^1.11.3"  # Scientific computation
-joblib = "^1.3.2"  # Parallel processing and caching
 fastapi-health = "^0.4.0"  # Health check for FastAPI
+#pyyaml = "^6.0.2"
+#python-box = "^7.2.0"
+#ensure = "^1.0.4"
+#joblib = "^1.3.2"  # Parallel processing and caching
+#python-dotenv = "^1.0.0"  # Manage environment variables
+#PyPDF2 = "^3.0.0"  # For PDF manipulation
+#pydantic = "^2.0.0"  # Data validation and settings management
+#tensorflow = "^2.14.0"  # Tensorflow for machine learning
+#numpy = "^1.26.0"  # Numerical computation
+#pandas = "^2.1.0"  # Data manipulation and analysis
+#scikit-learn = "^1.3.1"  # Machine learning library
+#seaborn = "^0.13.0"  # Statistical data visualization
+#matplotlib = "^3.8.0"  # Data visualization
+#scipy = "^1.11.3"  # Scientific computation
+
+
 
 [tool.poetry.group.dev.dependencies]
 deptry = "^0.16.2"  # For dependency management
-
 mypy = "^1.5.1"  # Static type checking
 pre-commit = "^3.4.0"  # Pre-commit hooks
 tox = "^4.11.1"  # Testing in multiple environments
@@ -41,6 +48,7 @@ codespell = "^2.2.5"  # Spell checking in code
 wheel = "^0.41.0"  # Build wheels
 twine = "^4.0.0"  # Publish packages
 pytest-runner = "^6.0.0"  # Running tests via `python setup.py test`
+
 
 [tool.poetry.group.docs.dependencies]
 mkdocs = "^1.5.0"  # Documentation site generator
@@ -79,13 +87,26 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.mypy]
 files = ["{{cookiecutter.project_slug}}"]
-disallow_untyped_defs = "True"
-disallow_any_unimported = "True"
-no_implicit_optional = "True"
-check_untyped_defs = "True"
-warn_return_any = "True"
-warn_unused_ignores = "True"
-show_error_codes = "True"
+disallow_untyped_defs = true
+disallow_any_unimported = true
+no_implicit_optional = true
+check_untyped_defs = true
+warn_return_any = true
+warn_unused_ignores = true
+show_error_codes = true
+pretty = true
+show_traceback = true
+
+
+[[tool.mypy.overrides]]
+module = [
+    "joblib.*",
+    "yaml.*",
+    "ensure.*",
+    "{{cookiecutter.project_slug}}.main"
+]
+ignore_missing_imports = true
+ignore_errors = true
 
 
 [tool.pytest.ini_options]
@@ -132,6 +153,8 @@ ignore = [
     "E501",
     # DoNotAssignLambda
     "E731",
+    # Possible binding to all interfaces - Require for Docker container
+    "S104"
 ]
 
 [tool.ruff.format]
@@ -161,3 +184,6 @@ replace = 'version = "{new_version}"'
 filename = "{{cookiecutter.project_slug}}/__init__.py"
 search = '__version__ = "{current_version}"'
 replace = '__version__ = "{new_version}"'
+
+[tool.deptry]
+exclude = ["research", "tests", "docs", ".venv", "venv", "__pycache__", ".ruff_cache", ".pytest_cache", ".mypy_cache", ".coverage", ".git", "build", "dist", ".github", "site", "config"]

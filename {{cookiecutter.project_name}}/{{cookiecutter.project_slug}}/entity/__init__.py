@@ -1,8 +1,8 @@
 """
 
-This module defines the core entities and data structures used throughout the 
-data science pipeline. Entities are designed to represent the inputs, outputs, 
-and intermediate states of the model training and prediction processes, ensuring 
+This module defines the core entities and data structures used throughout the
+data science pipeline. Entities are designed to represent the inputs, outputs,
+and intermediate states of the model training and prediction processes, ensuring
 consistency and validation across the project.
 
 Modules:
@@ -27,14 +27,14 @@ Features:
 
 Purpose:
     - Serves as a single source of truth for defining data structures in the pipeline.
-    - Facilitates seamless integration between different stages of the pipeline, 
+    - Facilitates seamless integration between different stages of the pipeline,
       such as data ingestion, validation, model training, and prediction.
     - Improves error handling by validating data early in the process.
 
 Examples:
     - **Data Schema**: Define the expected input structure for data preprocessing.
-    - **Model Parameters**: Store configurations like learning rate, batch size, 
+    - **Model Parameters**: Store configurations like learning rate, batch size,
       and optimizer type.
-    - **Prediction Results**: Represent the model's outputs in a structured format, 
+    - **Prediction Results**: Represent the model's outputs in a structured format,
       including predicted classes, probabilities, and confidence scores.
 """

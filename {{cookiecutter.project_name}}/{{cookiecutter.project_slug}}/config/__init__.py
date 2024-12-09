@@ -2,7 +2,7 @@
 
 This module centralizes all configuration settings for the project, ensuring
 consistent and maintainable configuration management. It provides access to
-environment variables, default settings, and other configurations required 
+environment variables, default settings, and other configurations required
 across different parts of the application.
 
 Modules:

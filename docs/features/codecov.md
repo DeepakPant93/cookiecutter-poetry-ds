@@ -10,18 +10,18 @@ Additionally, a `codecov.yaml` file is created, with the following defaults:
 # PR pipeline fails if codecov falls with 1%
 
 coverage:
-  range: 70..100
-  round: down
-  precision: 1
-  status:
-    project:
-      default:
-        target: auto
-        threshold: 1%
+    range: 70..100
+    round: down
+    precision: 1
+    status:
+        project:
+            default:
+                target: auto
+                threshold: 1%
 
 # Ignoring Paths
 # --------------
 # which folders/files to ignore
 ignore:
-  - "foo/bar.py"
+    - "foo/bar.py"
 ```

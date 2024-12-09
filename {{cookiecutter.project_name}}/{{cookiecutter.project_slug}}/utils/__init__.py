@@ -13,17 +13,3 @@ Functions:
     decode_image: Decodes an image from a base64 string.
     encode_image_into_base64: Encodes an image into a base64 string.
 """
-
-from {{cookiecutter.project_slug}}.utils.common import read_yaml, create_directories, save_json, load_json, save_bin, load_bin, get_size, decode_image, encode_image_into_base64
-
-__all__ = [
-    "read_yaml",
-    "create_directories",
-    "save_json",
-    "load_json",
-    "save_bin",
-    "load_bin",
-    "get_size",
-    "decode_image",
-    "encode_image_into_base64"
-]

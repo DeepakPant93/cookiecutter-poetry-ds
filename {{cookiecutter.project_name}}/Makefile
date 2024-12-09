@@ -1,3 +1,6 @@
+IMAGE_NAME = {{cookiecutter.dockerhub_username}}/{{cookiecutter.project_name}}
+TAG = latest
+
 .PHONY: install
 install: ## Install the poetry environment and install the pre-commit hooks
 	@echo "🚀 Creating virtual environment using pyenv and poetry"
@@ -40,7 +43,7 @@ update: ## Update project dependencies
 .PHONY: run
 run: ## Run the project's main application
 	@echo "🚀 Running the project"
-	@poetry run python main.py
+	@poetry run python {{cookiecutter.project_slug}}/main.py
 
 {%- if cookiecutter.publish_to == "pypi"%}
 
@@ -68,6 +71,26 @@ publish: ## Publish to the Artifactory repository using poetry. Requires ARTIFAC
 .PHONY: build-and-publish
 build-and-publish: build publish ## Build and publish.
 {%- endif%}
+
+.PHONY: git-init
+git-init: ## Initialize git repository
+	@echo "🚀 Initializing git repository"
+	@git init
+	@git add .
+	@git commit -m "init commit"
+	@git remote add origin git@github.com:{{cookiecutter.author_github_handle}}/{{cookiecutter.project_name}}.git
+	@git push -u origin main
+
+.PHONY: docker-build
+docker-build: # Build docker image
+	docker build -t $(IMAGE_NAME):$(TAG) -f Dockerfile .
+
+.PHONY: docker-push
+docker-push: # Push docker image to the docker hub
+	docker push $(IMAGE_NAME):$(TAG)
+
+.PHONY: docker-build-and-push
+docker-build-and-push: docker-build docker-push # Build and push docker image to the docker hub
 
 
 .PHONY: docs-test

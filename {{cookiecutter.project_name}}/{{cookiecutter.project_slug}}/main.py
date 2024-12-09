@@ -11,18 +11,21 @@ app = FastAPI(
     description="{{cookiecutter.project_description}}",
     version=__version__,
     docs_url="/docs",
-    redoc_url="/redoc"
+    redoc_url="/redoc",
 )
 
 
 app = FastAPI()
 
+
 async def health_check():
     return {"status": "healthy"}
+
 
 # Include routers
 app.add_api_route("/health", health([health_check]), tags=["Management"], description="Management APIs")
 app.include_router(router, prefix="/api/v1", tags=["Model Operations"])
+
 
 def custom_openapi():
     if app.openapi_schema:
@@ -39,7 +42,12 @@ def custom_openapi():
 
 app.openapi = custom_openapi
 
-if __name__ == "__main__":
-    import uvicorn
 
+def main():
+    import uvicorn
+    
     uvicorn.run(app, host="0.0.0.0", port={{cookiecutter.app_host_port}})
+
+
+if __name__ == "__main__":
+    main()

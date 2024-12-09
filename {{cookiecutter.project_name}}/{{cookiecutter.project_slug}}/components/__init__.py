@@ -1,7 +1,7 @@
 """
 
-This package contains modular and reusable components used across the project. 
-Each component is designed to encapsulate specific functionality, promoting code 
+This package contains modular and reusable components used across the project.
+Each component is designed to encapsulate specific functionality, promoting code
 reuse, scalability, and maintainability.
 
 Modules:

@@ -1,8 +1,8 @@
 """
 
-The `pipeline` module orchestrates the end-to-end flow of the data science process, from raw data ingestion to final predictions. 
-It consists of multiple submodules, each responsible for a specific stage in the pipeline. This modular structure ensures 
-scalability, reusability, and ease of maintenance. The pipeline is designed to handle data preprocessing, model training, 
+The `pipeline` module orchestrates the end-to-end flow of the data science process, from raw data ingestion to final predictions.
+It consists of multiple submodules, each responsible for a specific stage in the pipeline. This modular structure ensures
+scalability, reusability, and ease of maintenance. The pipeline is designed to handle data preprocessing, model training,
 evaluation, and predictions in a systematic and automated manner.
 
 Modules:

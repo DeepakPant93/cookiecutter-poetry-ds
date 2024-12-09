@@ -1,8 +1,8 @@
 """
 
-This module defines custom exception classes and error-handling utilities tailored 
-to the needs of a data science pipeline. It helps standardize error reporting, improve 
-debugging, and provide meaningful feedback during model training, data preprocessing, 
+This module defines custom exception classes and error-handling utilities tailored
+to the needs of a data science pipeline. It helps standardize error reporting, improve
+debugging, and provide meaningful feedback during model training, data preprocessing,
 and prediction processes.
 
 Classes:
@@ -45,22 +45,15 @@ Additional Notes:
     - Ensure that custom exceptions are raised with meaningful messages to assist in debugging and error resolution.
 """
 
-
-from http import HTTPStatus
-from fastapi import HTTPException, status
+from fastapi import HTTPException
 
 
-class APIException(HTTPException):
-    def __init__(self, detail: str, code: HTTPStatus = status.HTTP_400_BAD_REQUEST):
+class CustomException(HTTPException):
+    def __init__(self, status_code: int, detail: str):
         """
         Custom exception for handling API errors.
 
+        :param status_code: The HTTP status code to return.
         :param detail: A string describing the error in detail.
-        :param code: The HTTP status code to return (default: 400).
         """
-        super().__init__(status_code=code.value, detail=detail)
-        self.code = code
-
-    def __str__(self):
-        """Return a human-readable string version of the exception"""
-        return f"APIException: {self.status_code.phrase} ({self.status_code.value}) - {self.detail}"
+        super().__init__(status_code=status_code, detail=detail)
