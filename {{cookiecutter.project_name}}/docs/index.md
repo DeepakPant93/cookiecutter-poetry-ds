@@ -41,8 +41,8 @@ This repository contains a sample Data Science application built with FastAPI, d
 1. Clone the repository:
 
     ```bash
-    git clone https://github.com/{{cookiecutter.author_github_handle}}/{{cookiecutter.project_slug}}.git
-    cd example-project
+    git clone https://github.com/{{cookiecutter.author_github_handle}}/{{cookiecutter.project_name}}.git
+    cd {{cookiecutter.project_name}}
     ```
 
 2. Install dependencies using Poetry:
