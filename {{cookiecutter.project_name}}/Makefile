@@ -32,7 +32,7 @@ bake-env: ## Install the poetry environment and set up pre-commit hooks
 	@echo "🚀 Creating virtual environment using pyenv and poetry"
 	@poetry install
 	@poetry run pip install --upgrade dvc dvc-gdrive pydrive2 pyOpenSSL
-	@poetry run pre-commit install
+	@poetry run pre-commit install || true
 	@max_retries=3; count=0; \
 	while ! make check; do \
 		count=$$((count + 1)); \
@@ -40,7 +40,7 @@ bake-env: ## Install the poetry environment and set up pre-commit hooks
 			echo "Max retries reached. Exiting."; \
 			exit 1; \
 		fi; \
-		echo "Retrying make check ($$count/$$max_retries)..."; \
+		echo "Retrying make lint ($$count/$$max_retries)..."; \
 	done
 	@poetry shell
 

@@ -5,5 +5,9 @@ sudo apt update -y
 sudo apt-get install fish -y
 pip install dvc
 
+# Repo Initialization
+make init-repo
+git config --global --add safe.directory /workspaces/{{cookiecutter.project_name}}
+
 # Install Dependencies
-make install
+make reset-env
