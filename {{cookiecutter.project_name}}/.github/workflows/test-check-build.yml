@@ -1,4 +1,4 @@
-name: test, check and build pipeline
+name: Test, check and build pipeline
 
 on:
     push:

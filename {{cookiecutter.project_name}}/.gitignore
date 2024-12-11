@@ -157,7 +157,7 @@ dmypy.json
 cython_debug/
 
 # Vscode config files
-.vscode/
+# .vscode/
 
 # PyCharm
 #  JetBrains specific template is maintained in a separate JetBrains.gitignore that can
@@ -166,4 +166,5 @@ cython_debug/
 #  option (not recommended) you can uncomment the following to ignore the entire idea folder.
 #.idea/
 
-artifect/
+# artifect/
+dvc-service-account-key.json

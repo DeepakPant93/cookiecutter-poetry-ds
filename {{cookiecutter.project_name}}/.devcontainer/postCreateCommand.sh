@@ -1,7 +1,9 @@
 #! /usr/bin/env bash
 
-# Install Dependencies
-poetry install --with dev
+# Install fish terminal
+sudo apt update -y
+sudo apt-get install fish -y
+pip install dvc
 
-# Install pre-commit hooks
-poetry run pre-commit install --install-hooks
+# Install Dependencies
+make install

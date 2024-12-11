@@ -8,9 +8,9 @@
     "dockerhub_username": "fpgmaas",
     "include_github_actions": ["y", "n"],
     "publish_to": ["pypi", "artifactory", "none"],
-    "data_source_type": ["s3", "nfs", "url"],
-    "data_source": "Please Input data source",
-    "app_host_port": "8008",
+    "data_source_type": ["gdrive"],
+    "data_source_id": "Please Input data source id like folder id or bucket name",
+    "app_host_port": "80",
     "open_source_license": [
         "MIT license",
         "BSD license",

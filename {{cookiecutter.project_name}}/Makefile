@@ -1,6 +1,3 @@
-IMAGE_NAME = {{cookiecutter.dockerhub_username}}/{{cookiecutter.project_name}}
-TAG = latest
-
 # =============================
 # Project Configuration
 # =============================
@@ -14,7 +11,9 @@ IMAGE_NAME = {{cookiecutter.dockerhub_username}}/$(PROJECT_SLUG)
 RESOURCE_GROUP = $(PROJECT_NAME)-rg
 APP_NAME = $(PROJECT_NAME)-app
 APP_ENV_NAME = $(APP_NAME)-env
-
+DATASOURCE_ID = {{cookiecutter.data_source_id}}
+GCLOUD_PROJECT_ID = $(shell gcloud config get-value project)
+SERVICE_ACCOUNT_NAME = $(PROJECT_NAME)-dvcsa
 
 # =============================
 # Help (Default Target)
@@ -28,15 +27,33 @@ help: ## Display this help message
 # =============================
 # Installation and Setup
 # =============================
-.PHONY: install
-install: ## Install the poetry environment and set up pre-commit hooks
+.PHONY: bake-env
+bake-env: ## Install the poetry environment and set up pre-commit hooks
 	@echo "🚀 Creating virtual environment using pyenv and poetry"
 	@poetry install
+	@poetry run pip install --upgrade dvc dvc-gdrive pydrive2 pyOpenSSL
 	@poetry run pre-commit install
+	@max_retries=3; count=0; \
+	while ! make check; do \
+		count=$$((count + 1)); \
+		if [ $$count -ge $$max_retries ]; then \
+			echo "Max retries reached. Exiting."; \
+			exit 1; \
+		fi; \
+		echo "Retrying make check ($$count/$$max_retries)..."; \
+	done
 	@poetry shell
 
-.PHONY: git-init
-git-init: ## Initialize git repository
+.PHONY: clean-env
+clean-env: ## Remove the poetry environment
+	@echo "🚀 Removing virtual environment"
+	@rm -rf .venv
+
+.PHONY: reset-env
+reset-env: clean-env bake-env ## Install the poetry environment and set up pre-commit hooks
+
+.PHONY: init-repo
+init-repo: ## Initialize git repository
 	@echo "🚀 Initializing git repository"
 	@git init
 	@echo "🚀 Creating initial commit"
@@ -47,8 +64,8 @@ git-init: ## Initialize git repository
 	@echo "🚀 Pushing initial commit"
 	@git push -u origin main
 
-.PHONY: setup-env
-setup-env: ## Create resource group, container app environment, and service principal
+.PHONY: setup-cloud-env
+setup-cloud-env: ## Create resource group, container app environment, and service principal
 	@echo "🚀 Creating resource group: $(RESOURCE_GROUP)"
 	@az group create --name $(RESOURCE_GROUP) --location $(CLOUD_REGION)
 
@@ -64,8 +81,8 @@ setup-env: ## Create resource group, container app environment, and service prin
 	@echo "🚀 Creating container app: $(APP_NAME)"
 	@az containerapp create --name $(APP_NAME) --resource-group $(RESOURCE_GROUP) --environment $(APP_ENV_NAME) --image 'nginx:latest' --target-port 80 --ingress 'external' --query "properties.configuration.ingress.fqdn"
 
-.PHONY: delete-env
-delete-env: ## Delete resource group, container app environment, and service principal
+.PHONY: clean-cloud-env
+clean-cloud-env: ## Delete resource group, container app environment, and service principal
 	@echo "🚀 Deleting service principal for: $(APP_NAME)-service-principal"
 	@sp_object_id=$$(az ad sp list --display-name "$(APP_NAME)-service-principal" --query "[0].id" -o tsv) && \
 	if [ -n "$$sp_object_id" ]; then \
@@ -84,11 +101,77 @@ delete-env: ## Delete resource group, container app environment, and service pri
 	@echo "🚀 Deleting resource group: $(RESOURCE_GROUP)"
 	@az group delete --name $(RESOURCE_GROUP) --yes --no-wait || echo "Resource group not found, skipping deletion"
 
+.PHONY: bake-dvc
+bake-dvc: ## Initialize DVC and set up service account
+	@echo "Initializing the DVC"
+	@poetry run dvc init -f
+
+	@echo "Adding remote connection to the Gdrive"
+	@poetry run dvc remote add -d gdrive_remote gdrive://$(FOLDER_ID)
+	@poetry run dvc remote modify gdrive_remote gdrive_use_service_account true
+
+	@echo "Enabling Google Drive API"
+	@gcloud services enable drive.googleapis.com --project $(GCLOUD_PROJECT_ID)
+
+	@echo "Creating the Service Account"
+	@gcloud iam service-accounts create $(SERVICE_ACCOUNT_NAME) \
+	  --description="Service account for DVC to push data to Google Drive" \
+	  --display-name="DVC Service Account" || echo "$(SERVICE_ACCOUNT_NAME) service account already created."
+
+	@echo "Adding IAM Policy Bindings"
+	@gcloud projects add-iam-policy-binding $(GCLOUD_PROJECT_ID) \
+	  --member="serviceAccount:$(SERVICE_ACCOUNT_NAME)@$(GCLOUD_PROJECT_ID).iam.gserviceaccount.com" \
+	  --role="roles/iam.serviceAccountUser"
+
+	@echo "Creating Service Account Key"
+	@gcloud iam service-accounts keys create ./.dvc/dvc-service-account-key.json \
+	  --iam-account="$(SERVICE_ACCOUNT_NAME)@$(GCLOUD_PROJECT_ID).iam.gserviceaccount.com"
+
+	@echo "Configuring DVC with Service Account Key"
+	@poetry run dvc remote modify gdrive_remote gdrive_service_account_json_file_path ./.dvc/dvc-service-account-key.json
+
+	@echo "Successfully added remote link."
+
+.PHONY: clean-dvc
+clean-dvc: ## Clean up DVC and service account
+	@echo "Removing DVC remote"
+	@poetry run dvc remote remove gdrive_remote || true
+
+	@echo "Deleting Service Account Keys"
+	@if [ -f ./.dvc/dvc-service-account-key.json ]; then \
+		gcloud iam service-accounts keys delete \
+		$$(gcloud iam service-accounts keys list \
+			--iam-account="$(SERVICE_ACCOUNT_NAME)@$(GCLOUD_PROJECT_ID).iam.gserviceaccount.com" \
+			--format="value(name)" | head -n 1) \
+		--iam-account="$(SERVICE_ACCOUNT_NAME)@$(GCLOUD_PROJECT_ID).iam.gserviceaccount.com" -q || true; \
+		rm -f ./.dvc/dvc-service-account-key.json; \
+	fi
+
+	@echo "Removing IAM Policy Bindings"
+	@gcloud projects remove-iam-policy-binding $(GCLOUD_PROJECT_ID) \
+		--member="serviceAccount:$(SERVICE_ACCOUNT_NAME)@$(GCLOUD_PROJECT_ID).iam.gserviceaccount.com" \
+		--role="roles/iam.serviceAccountUser" || true
+
+	@echo "Deleting Service Account"
+	@gcloud iam service-accounts delete \
+		"$(SERVICE_ACCOUNT_NAME)@$(GCLOUD_PROJECT_ID).iam.gserviceaccount.com" -q || true
+
+	@echo "Disabling Google Drive API"
+	@gcloud services disable drive.googleapis.com --project $(GCLOUD_PROJECT_ID) || true
+
+	@echo "Removing DVC initialization"
+	@rm artifacts/*.dvc || true
+	@rm -rf .dvc || true
+	@rm dvc.lock || true
+
+
+	@echo "Cleanup complete"
+
 # =============================
 # Code Quality and Testing
 # =============================
-.PHONY: check
-check: ## Run code quality tools
+.PHONY: lint
+lint: ## Run code quality tools
 	@echo "🚀 Checking Poetry lock file consistency with 'pyproject.toml'"
 	@poetry check --lock
 	@echo "🚀 Linting code with pre-commit"
@@ -106,13 +189,13 @@ test: ## Run tests with pytest
 # =============================
 # Build and Release
 # =============================
-.PHONY: build
-build: clean-build ## Build wheel file using poetry
+.PHONY: bake
+bake: clean-build ## Build wheel file using poetry
 	@echo "🚀 Creating wheel file"
 	@poetry build
 
-.PHONY: clean-build
-clean-build: ## Clean build artifacts
+.PHONY: clean-bake
+clean-bake: ## Clean build artifacts
 	@rm -rf dist
 
 .PHONY: publish
@@ -123,8 +206,8 @@ publish: ## Publish a release to PyPI
 	@echo "🚀 Publishing"
 	@poetry publish
 
-.PHONY: build-and-publish
-build-and-publish: build publish ## Build and publish to PyPI
+.PHONY: bake-and-publish
+bake-and-publish: clean-bake publish ## Build and publish to PyPI
 
 .PHONY: update
 update: ## Update project dependencies
@@ -152,23 +235,23 @@ docs: ## Build and serve the documentation
 # =============================
 # Docker
 # =============================
-.PHONY: docker-build
-docker-build: ## Build Docker image
+.PHONY: bake-container
+bake-container: ## Build Docker image
 	@echo "🚀 Building Docker image"
 	docker build -t $(IMAGE_NAME):$(TAG) -f Dockerfile .
 
-.PHONY: docker-push
-docker-push: ## Push Docker image to Docker Hub
+.PHONY: container-push
+container-push: ## Push Docker image to Docker Hub
 	@echo "🚀 Pushing Docker image to Docker Hub"
 	docker push $(IMAGE_NAME):$(TAG)
 
-.PHONY: docker-build-and-push
-docker-build-and-push: docker-build docker-push ## Build and push Docker image to Docker Hub
+.PHONY: bake-container-and-push
+bake-container-and-push: docker-build docker-push ## Build and push Docker image to Docker Hub
 
-.PHONY: clean-docker
-clean-docker: ## Clean up Docker resources related to the app
+.PHONY: clean-container
+clean-container: ## Clean up Docker resources related to the app
 	@echo "🚀 Deleting Docker image for app: $(IMAGE_NAME)"
-	@docker images $(IMAGE_NAME) --format {% raw %}"{{.Repository}}:{{.Tag}}"{% endraw %} | xargs -r docker rmi -f || echo "No image to delete"
+	@docker images $(IMAGE_NAME) --format "{{.Repository}}:{{.Tag}}" | xargs -r docker rmi -f || echo "No image to delete"
 
 	@echo "🚀 Deleting unused Docker volumes"
 	@docker volume ls -qf dangling=true | xargs -r docker volume rm || echo "No unused volumes to delete"
@@ -180,10 +263,53 @@ clean-docker: ## Clean up Docker resources related to the app
 	@docker ps -aq --filter "status=exited" | xargs -r docker rm || echo "No stopped containers to clean up"
 
 # =============================
+# DVC Operations
+# =============================
+.PHONY: dvc-add-data
+dvc-add-data: ## Add a data file to DVC and Git, and enable autostage in DVC
+	@echo "Adding $(DATA_FILENAME) to DVC tracking..."
+	@poetry run dvc add artifacts/$(DATA_FILENAME) || true
+	@echo "Staging DVC changes for $(DATA_FILENAME) to Git..."
+	@git add artifacts/.gitignore || true
+	@git add artifacts/$(DATA_FILENAME) || true
+	@echo "Commiting DVC changes for $(DATA_FILENAME) to Git..."
+	@git commit -m "Added $(DATA_FILENAME) to DVC and Git"
+	@echo "Enabling DVC autostage..."
+	@poetry run dvc config core.autostage true
+	@echo "Successfully added $(DATA_FILENAME) to DVC and Git."
+
+.PHONY: dvc-push-data
+dvc-push-data: ## Push changes to Git
+	@echo "Pushing changes to DVC remote..."
+	@poetry run dvc push
+
+.PHONY: dvc-pull-data
+dvc-pull-data: ## Push changes to Git
+	@echo "Pulling changes from DVC remote..."
+	@poetry run dvc pull --allow-missing
+
+.PHONY: dvc-run-pipeline
+dvc-run-pipeline: ## Run DVC pipeline
+	@echo "Running DVC pipeline..."
+	@poetry run dvc repro
+	@echo "Pipeline completed"
+
+
+# =============================
+# Debug
+# =============================
+
+.PHONY: print-dependency-tree
+print-dependency-tree: ## Initialize DVC and set up service account
+	@echo "Printing dependency tree..."
+	@poetry run pipdeptree -p $(PACKAGE_NAME)
+
+
+# =============================
 # Cleanup
 # =============================
-.PHONY: cleanup-local
-cleanup-local: clean-build clean-docker ## Clean up temporary files and directories and destroy the virtual environment, Docker image from your local machine
+.PHONY: teardown
+teardown: clean-bake clean-container ## Clean up temporary files and directories and destroy the virtual environment, Docker image from your local machine
 	@echo "🚀 Cleaning up temporary files and directories"
 	@rm -rf .pytest_cache || true
 	@rm -rf dist || true
@@ -196,5 +322,5 @@ cleanup-local: clean-build clean-docker ## Clean up temporary files and director
 	@rm -rf .ruff_cache || true
 	@echo "🚀 Clean up completed."
 
-.PHONY: cleanup-all
-cleanup-all: cleanup-local delete-env ## Clean up temporary files and directories and destroy the virtual environment, Docker image, and Cloud resources
+.PHONY: teardown-all
+teardown-all: teardown clean-dvc clean-cloud-env ## Clean up temporary files and directories and destroy the virtual environment, Docker image, and Cloud resources
