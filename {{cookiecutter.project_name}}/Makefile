@@ -251,7 +251,7 @@ bake-container-and-push: docker-build docker-push ## Build and push Docker image
 .PHONY: clean-container
 clean-container: ## Clean up Docker resources related to the app
 	@echo "🚀 Deleting Docker image for app: $(IMAGE_NAME)"
-	@docker images $(IMAGE_NAME) --format "{{.Repository}}:{{.Tag}}" | xargs -r docker rmi -f || echo "No image to delete"
+	@docker images $(IMAGE_NAME) --format {% raw %}"{{.Repository}}:{{.Tag}}"{% endraw %} | xargs -r docker rmi -f || echo "No image to delete"
 
 	@echo "🚀 Deleting unused Docker volumes"
 	@docker volume ls -qf dangling=true | xargs -r docker volume rm || echo "No unused volumes to delete"
