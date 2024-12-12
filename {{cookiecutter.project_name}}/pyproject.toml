@@ -15,7 +15,7 @@ packages = [
 
 [tool.poetry.dependencies]
 python = ">=3.11,<4.0"
-fastapi = "^0.100.0"  # Latest compatible version
+fastapi = "~0.100.0"  # Latest compatible version
 uvicorn = "^0.23.0"  # For running FastAPI apps
 fastapi-health = "^0.4.0"  # Health check for FastAPI
 #pyyaml = "^6.0.2"
@@ -78,6 +78,7 @@ pytest = "^7.2.0"  # Testing framework
 allure-pytest = "^2.13.0"  # Reporting for pytest
 pytest-sugar = "^0.9.7"  # Better test output
 pytest-cov = "^4.0.0"  # Test coverage reports
+httpx = "^0.24.0"
 
 
 [build-system]
@@ -111,6 +112,15 @@ ignore_errors = true
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+norecursedirs = "legacy_tests"
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+filterwarnings = [
+    "ignore:.*general_plain_validator_function.*:DeprecationWarning",
+    "ignore:.*with_info_plain_validator_function.*:DeprecationWarning"
+]
+
 
 [tool.ruff]
 target-version = "py39"
@@ -163,9 +173,21 @@ preview = true
 [tool.coverage.report]
 skip_empty = true
 
+
 [tool.coverage.run]
 branch = true
 source = ["{{cookiecutter.project_slug}}"]
+# parallel = true
+# concurrency = ["thread"]
+omit = [
+    "**/__init__.py", # Exclude all init files
+    "{{cookiecutter.project_slug}}/main.py",  # Exclude main.py file
+    "{{cookiecutter.project_slug}}/constants/*",   # Exclude all files in a constants folder
+    "{{cookiecutter.project_slug}}/exception/*",   # Exclude all files in a exception folder
+    "{{cookiecutter.project_slug}}/logger/*",  # Exclude all files in a logger folder
+    "{{cookiecutter.project_slug}}/entity/*",  # Exclude all files in entity  folder
+    "{{cookiecutter.project_slug}}/config/*",  # Exclude all files in config  folder
+]
 
 [tool.ruff.per-file-ignores]
 "tests/*" = ["S101"]
